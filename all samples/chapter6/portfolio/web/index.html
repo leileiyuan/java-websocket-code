@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Stocks</title>
+    </head>
+    <body>
+        <h1 style="text-align: left;">Portfolio</h1>
+
+        <table border="0" cellpadding="2" cellspacing="2" width="30%">
+            <tbody>
+            <tr>
+                <td bgcolor="#ccffff">
+                    Control Panel
+                    <br>
+                    <br>
+                    Select Stock information fields
+                    <div style="text-align: left;">
+                   
+                    <form action="">
+                        <input id="current-priceID" onclick="cbChanged()" type="checkbox" name="current-price" value="CP">Current Price<br>
+                        <input id="open-priceID" onclick="cbChanged()" type="checkbox" name="open-price" value="OP">Opening Price<br>
+                        <input id="percentage-changeID" onclick="cbChanged()" type="checkbox" name="percentage-change" value="PC">Percentage Change<br>
+                        <input id="volumeID" onclick="cbChanged()" type="checkbox" name="volume" value="V">Volume<br>
+                    </form> 
+                    <br>
+                    <br>
+                    Select Access level    
+                    <br>    
+                    <select onclick="cbChanged()" id="member-levelID">
+                        <option value="bronze">Bronze</option>
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                    </select>          
+               
+                </td>
+            </tr>    
+            </tbody>
+        </table>
+        <div id="output"></div>
+    </body>
+    <script language="javascript" type="text/javascript">
+            var websocket;
+            function init() {
+                output = document.getElementById("output");
+                document.getElementById("current-priceID").setAttribute("checked", true);
+                document.getElementById("open-priceID").setAttribute("checked", true);
+                document.getElementById("percentage-changeID").setAttribute("checked", true);
+                document.getElementById("volumeID").setAttribute("checked", true);
+                document.getElementById("member-levelID").selectedIndex = 0;
+                openStocks();
+            }
+            
+            function destroy() {
+                websocket.close()
+            }
+            
+            function cbChanged() {
+                destroy();
+                openStocks();
+            }
+            
+            function openStocks() {
+                var uri = 'ws://localhost:8080/portfolio/updates/' + getMemberLevelString() + getQueryString();
+                websocket = new WebSocket(uri);
+                websocket.onmessage = function (evt) {
+                    display(evt.data)
+                };
+                websocket.onclose = function(evt) {
+                    display("updates closed");
+                }
+ 
+                
+            }
+            
+            function addAmp(str, needs) {
+                if (needs) {
+                    return "&" + str;
+                } else {
+                    return str;
+                }
+            }
+            
+             function getQueryString() {
+                var qs = "?";
+                var cp = document.getElementById("current-priceID");
+                var op = document.getElementById("open-priceID");
+                var pc = document.getElementById("percentage-changeID");
+                var v = document.getElementById("volumeID");
+                
+                var oneadded = false;
+                if (cp.checked) {
+                    
+                    qs = qs + addAmp("current-price", oneadded);
+                    oneadded = true;
+                }
+                if (op.checked) {
+                    qs = qs + addAmp("open-price", oneadded);
+                    oneadded = true;
+                }
+                if (pc.checked) {
+                    qs = qs + addAmp("percentage-change", oneadded);
+                    oneadded = true;
+                }
+                if (v.checked) {
+                    qs = qs + addAmp("volume", oneadded);
+                    oneadded = true;
+                }
+                return qs;
+            }
+            
+            function getMemberLevelString() {
+                var mlIdx = document.getElementById("member-levelID").selectedIndex;
+                if (mlIdx == 0) {
+                    return "bronze";
+                } 
+                if (mlIdx == 1) {
+                    return "silver";
+                }
+                if (mlIdx == 2) {
+                    return "gold";
+                }
+            }
+            
+            function closeStocks() {
+                websocket.close();
+            }
+
+            function display(data) {
+                var pre = document.createElement("p");
+                pre.style.wordWrap = "break-word";
+                pre.innerHTML = data;
+                clearNodes(output);
+                output.appendChild(pre);
+            }
+            
+            function clearNodes(node) {
+                if (node.firstChild != null) {
+                    node.removeChild(node.firstChild);
+                }
+            }
+            
+            window.addEventListener("beforeunload", destroy, false);
+            window.addEventListener("load", init, false);
+        </script>
+</html>
